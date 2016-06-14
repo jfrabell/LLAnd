@@ -35,6 +35,7 @@ if (mysqli_connect_errno())
 	}
 	
 	function login($username,$password){		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+//login still needs last login in database
 	    $response = array();	
 		$response["success"]=false;
 		if(!$result = mysqli_query($this->connect,$statement)){
@@ -64,13 +65,25 @@ if (mysqli_connect_errno())
 	}
 	
 	function checkin($username,$overnight){
+//check in still needs date time in database
+		$statement = "UPDATE `locallandings`.`users` SET `overnight` = '$overnight' WHERE `userName` = '$username'";
+	    $response = array();	
+		$response["success"]=false;
 		
+		if(!$result = mysqli_query($this->connect,$statement)){
+			echo("Error description: " . mysqli_error($this->connect));
+			echo "<P>$statement";
+			$response["success"] = false;
+		}
+		else {
+			$response["success"]=true;
+			}
+		
+	return $response;
 	}
 	
 	function getFriends($username){
 		
-	}
-	
-	
+	}	
 	
 }
