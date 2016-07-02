@@ -19,3 +19,4 @@
 [13-Jun-2016 18:35:50 UTC] PHP Fatal error:  Function name must be a string in /home/jfrabelll/public_html/Database.php on line 25
 [13-Jun-2016 19:01:59 UTC] PHP Fatal error:  Function name must be a string in /home/jfrabelll/public_html/Database.php on line 33
 [13-Jun-2016 19:04:18 UTC] PHP Fatal error:  Function name must be a string in /home/jfrabelll/public_html/Database.php on line 33
+[02-Jul-2016 20:40:55 UTC] PHP Fatal error:  Cannot use object of type mysqli_result as array in /home/jfrabelll/public_html/Database.php on line 182
