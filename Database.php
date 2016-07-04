@@ -14,7 +14,7 @@ Class Database {
 		//somewhat reconstructed,
 		//need to check existing usernames
 
-		$statement = "INSERT INTO `locallandings`.`users` (`id`, `userName`, `passWord`, `firstName`, `lastName`, `email`, `lastLogin`, `overnight`, `overnightDate`, `privacy`, `friendsWith`) VALUES (NULL, '$username', '$passWOrd', '$firstname', '$lastname', '$email', '', '', '', '', '');";
+		$statement = "INSERT INTO `locallandings`.`users` (`id`, `userName`, `passWord`, `firstName`, `lastName`, `email`, `lastLogin`, `overnight`, `overnightDate`, `privacy`, `friendsWith`) VALUES (NULL, '$username', '$passWOrd', '$firstname', '$lastname', '$email', '', '', '', '0', '');";
 		$response = array();
 		$response["success"] = false;
 
@@ -30,7 +30,8 @@ Class Database {
 		return $response;
 	}
 
-	function login($username, $password) {		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+	function login($username, $password) {
+		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
 		//login still needs last login in database
 		$response = array();
 		$response["success"] = false;
@@ -38,6 +39,7 @@ Class Database {
 			//			echo("Error description: " . mysqli_error($this->connect));
 			//			echo "<P>$statement";
 			$response["success"] = false;
+			$response["reason"] = "Didn't find user";
 		} else {
 			//			echo "query workded";
 			//			$response["success"]=true;
@@ -46,6 +48,7 @@ Class Database {
 					$response["firstName"] = $arow[firstName];
 					$response["lastName"] = $arow[lastName];
 					$response["success"] = true;
+					$response["privacy"] = $arow[privacy];
 				} else {
 					$response["reason"] = "Invalid Username or Password";
 				}
@@ -63,6 +66,7 @@ Class Database {
 	function checkin($username, $overnight) {
 		//check in still needs date time in database
 		$now = time();
+		$now -= (60 * 60 * 4);
 		$overnight = str_replace("_", " ", $overnight);
 		mysqli_query($this -> connect, $timeStatement);
 		$statement = "UPDATE `locallandings`.`users` SET `overnight` = '$overnight' , `overnightDate` = '$now' WHERE `userName` = '$username'";
@@ -100,7 +104,7 @@ Class Database {
 
 			//now get names and locations
 
-			$tempStatement = "SELECT * FROM `locallandings`.`users` ORDER BY  `users`.`overnightDate` DESC";
+			$tempStatement = "SELECT * FROM `locallandings`.`users` WHERE `privacy` = '0' ORDER BY  `users`.`overnightDate` DESC";
 			$tempResult = mysqli_query($this -> connect, $tempStatement);
 			$i = 0;
 			while ($tempRow = mysqli_fetch_assoc($tempResult)) {
@@ -109,6 +113,43 @@ Class Database {
 					$tempLocation = $tempRow['overnight'];
 					$tempDate = date("m-d-y", $tempRow['overnightDate']);
 					$response["friend$i"] = "$tempName checked in at $tempLocation on $tempDate";
+					$i++;
+				}
+			}
+			$i = 0;
+		}
+
+		return $response;
+	}
+
+	function getFriendsNameOnly($username) {
+		//returns a string of text about each friend's checkin
+		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+		$response = array();
+		$response["success"] = false;
+
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			echo("Error description: " . mysqli_error($this -> connect));
+			echo "<P>$statement";
+			$response["success"] = false;
+		} else {
+			$response["success"] = true;
+
+			//we have the row, now get the friends
+			$arow = mysqli_fetch_assoc($result);
+			$friendList = explode("|", $arow['friendsWith']);
+
+			//now get names and locations
+
+			$tempStatement = "SELECT * FROM `locallandings`.`users` ORDER BY  `users`.`overnightDate` DESC";
+			$tempResult = mysqli_query($this -> connect, $tempStatement);
+			$i = 0;
+			while ($tempRow = mysqli_fetch_assoc($tempResult)) {
+				if (in_array($tempRow['id'], $friendList)) {
+					$tempName = $tempRow['firstName'] . " " . $tempRow['lastName'];
+					$tempLocation = $tempRow['overnight'];
+					$tempDate = date("m-d-y", $tempRow['overnightDate']);
+					$response["friend$i"] = "$tempName";
 					$i++;
 				}
 			}
@@ -152,7 +193,7 @@ Class Database {
 
 	function addAFriend($username, $addFriendName) {
 		$response["success"] = "false";
-//get list of friends
+		//get list of friends
 		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
 		if (!$dbresult = mysqli_query($this -> connect, $statement)) {
 			echo("Error 175 description: " . mysqli_error($this -> connect));
@@ -173,35 +214,176 @@ Class Database {
 			$response["reason"] = "Couldn't find new friend id";
 		} else {
 			while ($myrow = mysqli_fetch_assoc($dbresult)) {
-				$newFriendId = $myrow[id];		
-		//make sure we're not already friends
-		$needle = $newFriendId;
-		$haystack = $friendsListArray;
-		if (in_array($newFriendId, $friendsListArray)) {
-			//we're already friends
-			$response["success"] = "false";
-			$response["reason"] = "Already Friends";
-		} else {
-			//add id of new friend
-			$friendsListArray[] = $newFriendId;
-			//sort the updated list of friends
-			sort($friendsListArray, SORT_NUMERIC);
-			foreach ($friendsListArray as $key => $value) {
-					$newListOfFriends .= "|" . $value;
-			}			
-			//put sorted list back in database
-			$newListOfFriends = ltrim($newListOfFriends, '|');
-			$statementc = "UPDATE `locallandings`.`users` SET `friendsWith` = '$newListOfFriends' WHERE `userName` = '$username'";
-			if (!$result = mysqli_query($this -> connect, $statementc)) {
-				echo("Error 225 descritption: " . mysqli_error($this -> connect));
-				$response["success"] = "false";
-				$response["reason"] = "Couldn't add new list to database";
-			} else {
-				$response["success"] = "true";
-				$response["query"] = $statementc;
-			}}}}
+				$newFriendId = $myrow[id];
+				//make sure we're not already friends
+				$needle = $newFriendId;
+				$haystack = $friendsListArray;
+				if (in_array($newFriendId, $friendsListArray)) {
+					//we're already friends
+					$response["success"] = "false";
+					$response["reason"] = "Already Friends";
+				} else {
+					//add id of new friend
+					$friendsListArray[] = $newFriendId;
+					//sort the updated list of friends
+					sort($friendsListArray, SORT_NUMERIC);
+					foreach ($friendsListArray as $key => $value) {
+						$newListOfFriends .= "|" . $value;
+					}
+					//put sorted list back in database
+					$newListOfFriends = ltrim($newListOfFriends, '|');
+					$statementc = "UPDATE `locallandings`.`users` SET `friendsWith` = '$newListOfFriends' WHERE `userName` = '$username'";
+					if (!$result = mysqli_query($this -> connect, $statementc)) {
+						echo("Error 225 descritption: " . mysqli_error($this -> connect));
+						$response["success"] = "false";
+						$response["reason"] = "Couldn't add new list to database";
+					} else {
+						$response["success"] = "true";
+						$response["query"] = $statementc;
+					}
+				}
+			}
+		}
 		return $response;
-		
+
+	}
+
+	function deleteAFriend($username, $deleteuser) {
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		$nameArray = explode(" ", $deleteuser);
+		$firstName = $nameArray[0];
+		$lastName = $nameArray[1];
+		$statement = "SELECT * FROM `locallandings`.`users` WHERE `firstName` = '$firstName' && `lastName` = '$lastName'";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Couldn't find friend";
+		} else {
+			while ($myrow = mysqli_fetch_assoc($result)) {
+				$deleteId = $myrow[id];
+				$statementb = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+				if (!$resultb = mysqli_query($this -> connect, $statementb)) {
+					$response["success"] = "false";
+					$response["reason"] = "Couldn't find you";
+				} else {
+					while ($myrowb = mysqli_fetch_assoc($resultb)) {
+						$friendString = $myrowb[friendsWith];
+						$friendArray = explode("|", $friendString);
+						$needle = $deleteId;
+						$haystack = $friendArray;
+						if (in_array($needle, $haystack)) {
+							$position = array_search($needle, $haystack);
+							array_splice($friendArray, $position, 1);
+							foreach ($friendArray as $key => $value) {
+								$newListOfFriends .= "|" . $value;
+							}
+							//put sorted list back in database
+							$newListOfFriends = ltrim($newListOfFriends, '|');
+							$statementc = "UPDATE `locallandings`.`users` SET `friendsWith` = '$newListOfFriends' WHERE `userName` = '$username'";
+							if (!$result = mysqli_query($this -> connect, $statementc)) {
+								echo("Error 225 descritption: " . mysqli_error($this -> connect));
+								$response["success"] = "false";
+								$response["reason"] = "Couldn't Delete Friend from database";
+							} else {
+								$response["success"] = "true";
+								$response["reason"] = "";
+							}
+						} else {
+							$response["success"] = "false";
+							$response["reason"] = "You are not friends with this user";
+						}
+					}
+				}
+			}
+		}
+		return $response;
+	}
+
+	function changePrivacy($username) {
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Couldn't find you";
+		} else {
+			while ($myrow = mysqli_fetch_assoc($result)) {
+				if ($myrow[privacy] == "0") {
+					$newPrivacy = "1";
+				}
+				if ($myrow[privacy] == "1") {
+					$newPrivacy = "0";
+				}
+				$statementb = "UPDATE `locallandings`.`users` SET `privacy` = '$newPrivacy' WHERE `userName` = '$username'";
+				if (!$resultb = mysqli_query($this -> connect, $statementb)) {
+					$response["success"] = "false";
+					$response["reason"] = "Couldn't update database";
+				} else {
+					$response["success"] = "true";
+					$response["privacy"] = $newPrivacy;
+					unset($response["reason"]);
+				}
+			}
+		}
+		return $response;
+	}
+
+	function getCity($city) {
+		$statement = "SELECT * FROM `locallandings`.`deals` WHERE `city` = '$city'";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Couldn't find deals";
+		} else {
+
+			$response["success"] = "true";
+			$response["city"] = $city;
+
+			while ($myrow = mysqli_fetch_assoc($result)) {
+				$deals[] = $myrow["deal"];
+			}
+		}
+		foreach ($deals as $key => $value) {
+			$response["deal$key"] = $value;
+		}
+		if ($response["deal0"] == "") {
+			//no deals found, use generic
+			$response["deal0"] = "No Deals at this location";
+		}
+		return $response;
+	}
+
+	function getMyProfile($username) {
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Couldn't find you";
+		} else {
+			while ($myrow = mysqli_fetch_assoc($result)) {
+				unset($response);
+				$response["success"] = "true";
+				$response["firstName"] = $myrow[firstName];
+				$response["lastName"] = $myrow[lastName];
+				$response["email"] = $myrow[email];
+			}
+		}
+		return $response;
+	}
+
+	function updateMyProfile($username, $firstName, $lastName, $email) {
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		$statement = "UPDATE `locallandings`.`users` SET `firstName` = '$firstName' `lastName` = '$lastName'
+		`email` = '$email' WHERE `userName` = '$username' LIMIT 1";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Couldn't find you";
+		} else {
+				unset($response);
+				$response["success"] = "true";
+		}
+		return $response;
 	}
 
 }
