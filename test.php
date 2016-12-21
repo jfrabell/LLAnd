@@ -1,8 +1,3 @@
-<?php
-
-
-
-?>
 <form action = uploadphoto.php method=POST enctype="multipart/form-data">
 name <input type=text name="name" id="name"><br />
 username <input type=text name="username" id="username"><br />
