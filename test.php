@@ -1,16 +1,9 @@
-<?php
+<form action = uploadphoto.php method=POST enctype="multipart/form-data">
+name <input type=text name="name" id="name"><br />
+username <input type=text name="username" id="username"><br />
+userid <input type=text name="userID" id="userID"><br />
+image <input type="file" name="fileToUpload" id="fileToUpload"><br />
 
-
-
-?>
-<form action = getmyprofile.php method=GET>
-<!--
-first <input type=text name="firstName" id="firstName"><br>
-last <input name="lastName" id="lastName"><br>
---></br>
-user <input type=text name="username" id="username"><br />
-<!--overnight <input name="overnight" id="overnight"><br />-->
-<!--email <input name="email" id="email"><br>-->
-<!--City <input name="city" id="city"><br />-->
-<!--add a freidn <input name="name" id="name"><br>-->
 <input type=submit name=submit value='Submit'></form>
+
+image name user photo
