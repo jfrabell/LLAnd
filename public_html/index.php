@@ -2,10 +2,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Come on!</title>
+<title>OOPS!</title>
 </head>
 
 <body>
-	Come On!
+	Oops.  I think you meant to go <a href="/mifflin">Here (click me)</a>
 </body>
+<?
+
+phpinfo();
+?>
 </html>

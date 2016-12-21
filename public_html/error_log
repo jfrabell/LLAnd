@@ -1,0 +1,1 @@
+[12-Jul-2016 03:08:37 UTC] PHP Fatal error:  Using $this when not in object context in /home/jfrabelll/public_html/chatadd.php on line 3

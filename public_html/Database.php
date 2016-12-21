@@ -14,7 +14,7 @@ Class Database {
 		//somewhat reconstructed,
 		//need to check existing usernames
 
-		$statement = "INSERT INTO `locallandings`.`users` (`id`, `userName`, `passWord`, `firstName`, `lastName`, `email`, `lastLogin`, `overnight`, `overnightDate`, `privacy`, `friendsWith`) VALUES (NULL, '$username', '$passWOrd', '$firstname', '$lastname', '$email', '', '', '', '0', '');";
+		$statement = "INSERT INTO `locallandings`.`users` (`id`, `userName`, `passWord`, `firstName`, `lastName`, `email`, `lastLogin`, `overnight`, `overnightDate`, `privacy`, `friendsWith`, `token`) VALUES (NULL, '$username', '$passWOrd', '$firstname', '$lastname', '$email', '', '', '', '0', '', 'x');";
 		$response = array();
 		$response["success"] = false;
 
@@ -113,6 +113,7 @@ Class Database {
 					$tempLocation = $tempRow['overnight'];
 					$tempDate = date("m-d-y", $tempRow['overnightDate']);
 					$response["friend$i"] = "$tempName checked in at $tempLocation on $tempDate";
+					$response["username$i"] = $tempRow['userName'];
 					$i++;
 				}
 			}
@@ -356,6 +357,7 @@ Class Database {
 		$response["success"] = "false";
 		$response["reason"] = "Haven't Done Anything";
 		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
+		$response["statement"] = $statement;
 		if (!$result = mysqli_query($this -> connect, $statement)) {
 			$response["success"] = "false";
 			$response["reason"] = "Couldn't find you";
@@ -374,7 +376,7 @@ Class Database {
 	function updateMyProfile($username, $firstName, $lastName, $email) {
 		$response["success"] = "false";
 		$response["reason"] = "Haven't Done Anything";
-		$statement = "UPDATE `locallandings`.`users` SET `firstName` = '$firstName' `lastName` = '$lastName'
+		$statement = "UPDATE `locallandings`.`users` SET `firstName` = '$firstName' , `lastName` = '$lastName',
 		`email` = '$email' WHERE `userName` = '$username' LIMIT 1";
 		if (!$result = mysqli_query($this -> connect, $statement)) {
 			$response["success"] = "false";
@@ -384,6 +386,58 @@ Class Database {
 				$response["success"] = "true";
 		}
 		return $response;
+	}
+	
+	function store_token($username,$id){
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		$statement = "UPDATE `locallandings`.`users` SET `token` = '$id' WHERE `userName` = '$username' LIMIT 1";
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Didn't connect with database";
+		} 
+		else {
+			if(mysqli_affected_rows($this->connect) == 0){
+				$response["success"] = "false";
+				$response["reason"] = "Device id hasn't changed, or bad username";
+			}
+			else{
+				unset($response);
+				$response["success"] = "true";
+			}
+		}
+		return $response;
+		
+	}
+	
+	function local_chat($chattingWith,$userName){
+		$response["success"] = "false";
+		$response["reason"] = "Haven't Done Anything";
+		if($userName === $chattingWith){
+				$statement = "SELECT * FROM `locallandings`.`aa_messages` WHERE `to` = '$chattingWith' ORDER BY `aa_messages`.`date` DESC";
+		}
+else{
+		$statement = "SELECT * FROM `locallandings`.`aa_messages` WHERE (`to` = '$userName' && `from` = '$chattingWith') OR (`to` = '$chattingWith' && `from` = '$userName') ORDER BY `aa_messages`.`date` DESC";
+}	
+		if (!$result = mysqli_query($this -> connect, $statement)) {
+			$response["success"] = "false";
+			$response["reason"] = "Didn't connect with database";
+		} 
+		else {
+				unset($response);
+			$i=0;
+			while($myrow=mysqli_fetch_assoc($result)){
+				$response["from".$i] = $myrow["from"];
+				$response["to".$i] = $myrow["to"];
+				$response["text".$i] = $myrow["text"];
+				$response["date".$i] = $myrow["date"];
+				$i++;
+			}
+				$response["success"] = "true";
+			
+		}
+		return $response;
+		
 	}
 
 }
