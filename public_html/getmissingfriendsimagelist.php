@@ -2,7 +2,7 @@
 $response["success"] = "false";
 
 //get list of friends' usernames from database
-$username = $_GET["username"];
+$username = $_POST["username"];
 include "password.php";
 		$connect = mysqli_connect("localhost", "jefffrabell", $password, "locallandings");
 
@@ -12,7 +12,6 @@ include "password.php";
 		}
 		
 		$statement = "SELECT * FROM `locallandings`.`users` WHERE `userName` = '$username'";
-		
 		$result = mysqli_query($connect, $statement);
 		while($myrow=mysqli_fetch_assoc($result)){
 			$friends = $myrow["friendsWith"];
@@ -33,51 +32,33 @@ include "password.php";
 		}
 
 
-
-$path = "./ProfilePhotos";
-
 if ($userNamesNeeded == ""){
 	$response["reason"] = "No pictures needed";
 }
 else{
 $missingUserNames = explode("|", $userNamesNeeded);
 
+$finalNumber = count($missingUserNames);
 
-for($j=0; $j<count($missingUserNames); $j++){
-$filenames = scandir($path);
-
-foreach($filenames as $afile) {
-	$testString = $missingUserNames[$j];
-	$testFileName = explode(".",$afile);
-	
-if($testString == $testFileName[0]) 
-{
-	if($stringfilelist == ""){
-			$stringfilelist .= "$afile";		
-	}
-	else{
-			$stringfilelist .= "|$afile";
-	}
-}
-    
-}
-
-}
-
-$filelist = explode("|",$stringfilelist);
-$tester = $filelist["0"];
-if($tester === ""){
-	$response["reason"] = "No Friends with pictures";	
-}
-else{
+for ($i = 0; $i <= $finalNumber; $i++) {
+	$key = $missingUserNames[$i];
+	$sqlImage = "SELECT * FROM `locallandings`.`aa_photo` WHERE `userID` = '$key'";
+	$resultC = mysqli_query($connect, $sqlImage);
+	while($myrowImage = mysqli_fetch_assoc($resultC)){
+	$imageList.=$myrowImage[photoName]."|";
 	$response["success"] = "true";
-	for($q=0; $q < count($filelist); $q++){
-		$response["file$q"] = $filelist[$q];
 	}
+}
+
+$response["images"] = rtrim($imageList, "|");
+
+
+for($i=0; $i<10; $i++){
 	
 }
-}  // end of case where no pics are needed
 
+
+}
 
 echo json_encode($response);	
 
