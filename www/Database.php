@@ -430,10 +430,12 @@ Class Database {
 		
 	}
 	
-	function local_chat($chattingWith,$userName){
+	function local_chat($chattingWith,$userName,$city){
 		$response["success"] = "false";
 		$response["reason"] = "Haven't Done Anything";
-		if($userName === $chattingWith){
+		if($city == "true")
+		$statement = "SELECT * FROM `locallandings`.`aa_messages` WHERE `to` = '$chattingWith' ORDER BY `aa_messages`.`date` DESC";
+		elseif($userName === $chattingWith){
 				$statement = "SELECT * FROM `locallandings`.`aa_messages` WHERE `to` = '$chattingWith' ORDER BY `aa_messages`.`date` DESC";
 		}
 else{
